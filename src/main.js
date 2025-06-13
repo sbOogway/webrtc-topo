@@ -22,6 +22,8 @@ const messageInput = document.getElementById('messageInput')
 const messageButton = document.getElementById('messageButton')
 const messageDiv = document.getElementById('messageDiv')
 
+const offerDiv = document.getElementById("offerDiv")
+
 
 const kvSet = (key, value) => {
   fetch(url + key, {
@@ -86,13 +88,14 @@ const createWebRTCConnection = () => {
     console.log("new ice candidate. i print my sdp")
     // need to put my sdp in signaling server
     console.log(JSON.stringify(connection.localDescription));
+    offerDiv.innerHTML = `<p>${JSON.stringify(connection.localDescription)}</p><br>`
   }
   return connection;
 }
 
 // const createWebRTCDataChannel = (connection) => {
-  
-  // return dataChannel;
+
+// return dataChannel;
 // }
 
 const createWebRTCOffer = (connection) => {
@@ -104,9 +107,9 @@ const acceptWebRTCOffer = (connection, offer) => {
     const channel = e.channel;
     channel.onmessage = e => {
       console.log("messsage received!!!" + e.data);
-      messageDiv.innerHTML += `${e.data}`;
+      messageDiv.innerHTML += `<p>${e.data}</p><br>`;
     }
-    channel.onopen = e => {console.log("open!!!!"); channel.send("yo g wassup")}
+    channel.onopen = e => { console.log("open!!!!"); channel.send("yo g wassup") }
     channel.onclose = e => console.log("closed!!!!!!");
     connection.channel = channel;
   }
@@ -133,36 +136,64 @@ setTimeout(() => {
   // kvGet(key);
 }, 2000);
 
-const connection = createWebRTCConnection();
-const dataChannel = connection.createDataChannel("data");
-dataChannel.onmessage = e => console.log("message received " + e.data)
-dataChannel.onopen = e => console.log("data channel opened")
-dataChannel.onclose = e => console.log("data channel closed")
-// var dataChannel;
+const connections = new Map();
+// const connection = createWebRTCConnection();
+var dataChannel;
+var caller = false;
+var id;
+
 // 2. Create an offer
 callButton.onclick = async () => {
-  // const connection = createWebRTCConnection();
-  
+  caller = true;
+  const connection = createWebRTCConnection();
+
+  dataChannel = connection.createDataChannel("data");
+  dataChannel.onmessage = e => {
+    console.log("message received " + e.data);
+    messageDiv.innerHTML += `<p>${e.data}</p><br>`;
+  }
+  dataChannel.onopen = e => console.log("data channel opened")
+  dataChannel.onclose = e => console.log("data channel closed")
+
+  connection.channel = dataChannel
+  // var dataChannel;
   createWebRTCOffer(connection);
+  id = makeid(8)
+  connections.set(id, connection);
 };
 
 // 3. Answer the call with the unique ID
 answerButton.onclick = async () => {
   const offer = JSON.parse(callInput.value);
   // console.log(offer)
-  // const connection = createWebRTCConnection();
+  const connection = createWebRTCConnection();
   acceptWebRTCOffer(connection, offer);
   createWebRTCAnswer(connection);
+  id = makeid(8);
+  connections.set(id, connection);
+
 };
 
 acceptAnswerButton.onclick = async () => {
   const answer = JSON.parse(answerInput.value);
-  acceptWebRTCAnswer(connection, answer);
+  acceptWebRTCAnswer(connections.get(id), answer);
 }
 
 messageButton.onclick = async () => {
-  console.log('dbg btn clck')
+  // console.log('dbg btn clck')
   const message = messageInput.value;
   // dataChannel.send(message);
-  dataChannel.send(message);
+  // if (caller) {
+  //   dataChannel.send(message);
+  // } else {
+  connections.forEach(( connection, id) => {
+    console.log(connection)
+    connection.channel.send(message);
+  });
+
+
+  // });
+
 }
+// rece
+// }
