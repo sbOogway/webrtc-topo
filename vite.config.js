@@ -5,5 +5,6 @@ export default{
   server: {
     allowedHosts: ["drgn-wrr"],
   },
+  base: "/webrtc-topo/",
   // Add other configurations as needed
 };
