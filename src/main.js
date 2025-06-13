@@ -144,6 +144,7 @@ var id;
 
 // 2. Create an offer
 callButton.onclick = async () => {
+  console.log("dbg offer")
   caller = true;
   const connection = createWebRTCConnection();
 
